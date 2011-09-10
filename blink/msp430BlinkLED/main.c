@@ -31,33 +31,37 @@ unsigned int blink = 0;
 
 void main(void)
 {
-WDTCTL = WDTPW + WDTHOLD; // Stop watchdog timer
-LED_DIR |= (LED_0 + LED_1); // Set P1.0 and P1.6 to output direction
-LED_OUT &= ~(LED_0 + LED_1); // Set the LEDs off
-P1IE |= BUTTON;
+	// The Tutorials show using |= and &= to set these values
+	// but that isn't a good idea because they could have values
+	// left over from the last time the hardware was ran.
+	// We want to initialize these values exactly, so use the = operator.
 
-__enable_interrupt();
+	WDTCTL = WDTPW + WDTHOLD; // Stop watchdog timer
+	LED_DIR = (LED_0 | LED_1); // Set P1.0 and P1.6 to output direction
 
-for (;;)
-{
+	// The ~ operator takes the bit-wise complement of whatever we give it
+	LED_OUT = ~(LED_0 | LED_1); // Set the LEDs off
 
-if(blink > 0)
-{
-P1OUT ^= (LED_0 + LED_1); // Toggle P1.0 and P1.6 using exclusive-OR
+	P1IE = BUTTON;
 
-__delay_cycles(100000); // SW Delay of 10000 cycles at 1Mhz
+	__enable_interrupt();
 
-}
-}
+	while(1) // infinite loop, we exit by cutting power	
+	{
+		if(blink > 0)
+		{
+			P1OUT ^= (LED_0 + LED_1); // Toggle P1.0 and P1.6 using exclusive-OR
 
+			__delay_cycles(100000); // SW Delay of 10000 cycles at 1Mhz
+		}
+	}
 } 
 
 // Port 1 interrupt service routine
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void)
 {
-blink ^= 0x01;
-P1IFG &= ~BUTTON; // P1.3 IFG cleared
-LED_OUT &= ~(LED_0 + LED_1); // Clear the LEDs so they start in OFF state
-
+	blink ^= 0x01; // the ^ is the XOR operator. Using it with the value of 1 toggles the first bit of the variable "blink".
+	P1IFG &= ~BUTTON; // P1.3 IFG cleared
+	LED_OUT &= ~(LED_0 + LED_1); // Clear the LEDs so they start in OFF state
 }
